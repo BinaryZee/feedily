@@ -1,22 +1,20 @@
 import { createClient } from "../../utils/supabase";
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: 'Method Not Allowed and having some issue' });
   }
 
   const supabase = createClient();
-  const { link } = req.query;
+  const { ip , userName } = req.body;
 
-  if (!link) {
-    return res.status(400).json({ error: 'Missing link parameter' });
+  if (!ip || !userName) {
+    return res.status(400).json({ error: 'Missing ip or userName' });
   }
 
   const { data, error } = await supabase
-    .from("widgets")
-    .select("title, feedbacks , text_feedback , archieved")
-    .eq("link", link)
-    .single();
+    .from("ip")
+    .upsert({ip:ip , user_name:userName},{onConflict:"ip"})
 
   if (error) {
     console.error(error);
@@ -26,6 +24,5 @@ export default async function handler(req, res) {
   if (!data) {
     return res.status(404).json({ error: 'Widget not found' });
   }
-
   return res.status(200).json(data);
 }

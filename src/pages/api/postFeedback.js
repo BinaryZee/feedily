@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing parameters" });
   }
 
-  // Step 1: Get the widget row by link
+
   const { data: widget, error: fetchError } = await supabase
     .from("widgets")
     .select("feedbacks")
@@ -23,7 +23,6 @@ export default async function handler(req, res) {
     return res.status(404).json({ error: "Widget not found" });
   }
 
-  // Step 2: Update the feedbacks JSONB
   const updatedFeedbacks = {
     ...(widget.feedbacks || {}),
     [ip]: rating.toString(),

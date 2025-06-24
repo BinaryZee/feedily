@@ -1,11 +1,15 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Reaction from "./reaction";
+import TextFeedbacks from "./textFeedbacks";
+import { Send } from "lucide-react";
 
 const PublicWidget = ({ link }) => {
+  const feedback = useRef(null);
   const [ip, setIp] = useState("");
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({});
+  const [allowFeedback, setFeedback] = useState(null);
   const [feedbackCounts, setFeedbackCounts] = useState({
     1: 0,
     2: 0,
@@ -22,12 +26,13 @@ const PublicWidget = ({ link }) => {
     { id: 4, emoji: "🙁" },
     { id: 5, emoji: "😠" },
   ];
+  const [isNameGiven, setIsNameGiven] = useState(true);
+  const [username, setUsername] = useState("");
 
   useEffect(() => {
     const getAllData = async () => {
       await fetchIP();
       await fetchWidget();
-      setLoading(false);
     };
 
     const fetchIP = async () => {
@@ -35,7 +40,6 @@ const PublicWidget = ({ link }) => {
         const res = await fetch("https://ipapi.co/json/");
         const data = await res.json();
         setIp(data.ip);
-        console.log("User IP:", data.ip);
       } catch (err) {
         console.error("Failed to fetch IP:", err);
       }
@@ -45,7 +49,14 @@ const PublicWidget = ({ link }) => {
       try {
         const res = await fetch(`/api/getWidget?link=${link}`);
         const data = await res.json();
+        console.log(data)
         setData(data);
+        setFeedback(data.text_feedback);
+        
+        if (data.archieved) {
+          setLoading(false);
+          return;
+        }
 
         const feedbacks = data.feedbacks || {};
 
@@ -61,70 +72,187 @@ const PublicWidget = ({ link }) => {
         if (feedbacks.hasOwnProperty(ip)) {
           const previousRating = parseInt(feedbacks[ip]);
           if (previousRating >= 1 && previousRating <= 5) {
-            setSelectedRating(previousRating); 
+            setSelectedRating(previousRating);
             setIsDone(true);
           }
         }
+        const resIp = await fetch("/api/ipExist", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ip }),
+        });
+
+        const userIpData = await resIp.json();
+        setIsNameGiven(userIpData.exists);
+        if (userIpData.exists) setUsername(userIpData.userName);
       } catch (err) {
         console.error("Failed to fetch widget data:", err);
       }
-    };  
+      setLoading(false);
+    };
 
     getAllData();
   }, [ip, link]);
 
-  return (
-    <div className="flex-1 flex flex-col items-center justify-center">
-      {!loading ? (
-        <div className="flex flex-col gap-4 w-[50%] h-[70vh] border-2 rounded-2xl p-8 overflow-y-auto">
-          <h2 className="text-xl font-semibold mb-4 text-balance">
-            {data.title}
-          </h2>
+  const handleNameSubmit = async (e) => {
+    e.preventDefault();
+    if (username.trim()) {
+      setIsNameGiven(true);
+      await fetch("/api/postUserName", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ip,
+          userName: username,
+        }),
+      });
+    }
+  };
 
-          {reactions.map((reaction) => (
-            <Reaction
-              key={reaction.id}
-              emoji={reaction.emoji}
-              count={feedbackCounts[reaction.id] || 0}
-              selected={selectedRating === reaction.id}
-              onClick={async () => {
-                if (selectedRating === reaction.id) return;
+  const handelFeedbackSubmit = async () => {
+    if (feedback.current) {
+      const value = feedback.current.value;
+      feedback.current.value = "";
+      await fetch("/api/postTextFeedback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          link,
+          user_name: username,
+          title: value,
+        }),
+      });
+    }
+  };
 
-                setFeedbackCounts((prev) => {
-                  const updated = { ...prev };
-                  if (selectedRating) {
-                    updated[selectedRating] = Math.max(
-                      (updated[selectedRating] || 1) - 1,
-                      0
-                    );
-                  }
-                  updated[reaction.id] = (updated[reaction.id] || 0) + 1;
-                  return updated;
-                });
-
-                setSelectedRating(reaction.id);
-
-                try {
-                  await fetch("/api/postFeedback", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                      ip,
-                      rating: reaction.id,
-                      link,
-                    }),
-                  });
-                } catch (err) {
-                  console.error("Failed to send feedback", err);
-                }
-              }}
-            />
-          ))}
+  if (loading) {
+    
+    return <div className="flex-1 flex justify-center items-center"><h2>Loading...</h2></div>
+  }
+  if (data.archieved) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center">
+        <div className="bg-white p-8 rounded-lg max-w-md w-full text-center">
+          <h3 className="text-xl font-semibold mb-4">Widget Unavailable</h3>
+          <p className="text-gray-600">
+            The owner has temporarily hidden this widget.
+          </p>
         </div>
-      ) : (
-        <h2>Loading...</h2>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center relative">
+      {!isNameGiven && (
+        <div className="bg-white absolute inset-0 bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">
+              Please enter your name
+            </h3>
+            <form onSubmit={handleNameSubmit}>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full p-2 border rounded mb-4"
+                placeholder="Your name"
+                required
+              />
+              <button
+                type="submit"
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              >
+                Submit
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isNameGiven && (
+        <div className="flex w-full justify-center items-center gap-4">
+          <div className="flex flex-col gap-4 w-[50%] h-[70vh] border-2 rounded-2xl p-8 overflow-y-auto">
+            <h2 className="text-xl font-semibold mb-4 text-balance">
+              {data.title}
+            </h2>
+
+            {reactions.map((reaction) => (
+              <Reaction
+                key={reaction.id}
+                emoji={reaction.emoji}
+                count={feedbackCounts[reaction.id] || 0}
+                selected={selectedRating === reaction.id}
+                onClick={async () => {
+                  if (selectedRating === reaction.id) return;
+
+                  setFeedbackCounts((prev) => {
+                    const updated = { ...prev };
+                    if (selectedRating) {
+                      updated[selectedRating] = Math.max(
+                        (updated[selectedRating] || 1) - 1,
+                        0
+                      );
+                    }
+                    updated[reaction.id] = (updated[reaction.id] || 0) + 1;
+                    return updated;
+                  });
+
+                  setSelectedRating(reaction.id);
+
+                  try {
+                    await fetch("/api/postFeedback", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        ip,
+                        rating: reaction.id,
+                        link,
+                        username: isNameGiven ? username : null,
+                      }),
+                    });
+                  } catch (err) {
+                    console.error("Failed to send feedback", err);
+                  }
+                }}
+              />
+            ))}
+            <div
+              className={`w-full flex items-center gap-2 ${
+                allowFeedback ? "" : "hidden"
+              }`}
+            >
+              <input
+                ref={feedback}
+                type="text"
+                placeholder="enter your feedback"
+                className="min-h-[8vh] border w-full rounded-[.5rem] p-0.5 pl-3 pr-10"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handelFeedbackSubmit();
+                  }
+                }}
+              />
+              <button
+                onClick={handelFeedbackSubmit}
+                className="relative right-10 text-gray-500 hover:text-blue-500 transition-colors"
+                aria-label="Submit feedback"
+              >
+                <Send className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+          {allowFeedback && <TextFeedbacks link={link} />}
+        </div>
       )}
     </div>
   );

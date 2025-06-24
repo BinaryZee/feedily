@@ -28,7 +28,6 @@ const Widgets = () => {
         setLoading(true);
         const response = await fetch("/api/getUserWidgets");
         const data = await response.json();
-        console.log("User widgets:", data);
         setWidgets(data || []);
       } catch (error) {
         console.error("Error fetching user widgets:", error);
@@ -61,7 +60,6 @@ const Widgets = () => {
       setIsShiftPressed(true);
     }
 
-    // Submit on Enter (without Shift)
     if (e.key === "Enter" && !isShiftPressed) {
       handleFormSubmit(e);
     }
@@ -82,6 +80,15 @@ const Widgets = () => {
       body: JSON.stringify({ title }),
     });
   };
+
+  const removeWidget = (ind)=>{
+    setWidgets(prevItems => {
+      const newItems = [...prevItems]; 
+      newItems.splice(ind, 1);       
+      return newItems;                 
+    });
+  }
+
 
   return (
     <div className="w-[60%] h-[70%]">
@@ -104,8 +111,8 @@ const Widgets = () => {
                   You have not created a widget yet!!
                 </p>
               ) : (
-                widgets.map((widget) => (
-                  <UserWidget key={widget.widget_id} data={widget} />
+                widgets.map((widget , ind) => (
+                  <UserWidget key={widget.widget_id} data={widget} removeWidget = {()=>{removeWidget(ind)}}/>
                 ))
               )}
             </div>
@@ -136,7 +143,7 @@ const Widgets = () => {
               className="w-full min-h-[48px] max-h-[200px] px-4 py-2 border-2 rounded-lg text-lg overflow-y-auto resize-none"
               rows={1}
               required
-            />
+            />  
             <button
               type="submit"
               className="bg-black w-32 h-16 rounded-xl text-white text-xl cursor-pointer"

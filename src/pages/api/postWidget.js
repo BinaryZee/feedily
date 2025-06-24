@@ -17,7 +17,7 @@ export default async function handler(req, res) {
   const { id } = resJson;
 
   const link = uuidv4();
-  const {data , error} = await supabase.from("widgets").insert([{id:id , title ,feedbacks:{} , link , archieved : false}]).select().single()
+  const {data , error} = await supabase.from("widgets").insert([{id:id , title ,feedbacks:{} , link , archieved : false,text_feedback:false}]).select().single()
   if(error)console.log(error)
   res.status(200).end(); 
 }
