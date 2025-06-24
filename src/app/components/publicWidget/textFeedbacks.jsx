@@ -50,7 +50,7 @@ const TextFeedbacks = ({ link }) => {
                 </div>
             ) : (
                 <div className="w-full flex items-center justify-center text-gray-500">
-                    No feedbacks yet for this link
+                    No feedbacks yet for this widget
                 </div>
             )}
         </div>
