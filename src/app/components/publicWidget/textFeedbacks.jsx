@@ -16,7 +16,7 @@ const TextFeedbacks = ({ link }) => {
                     .from('feedbacks')
                     .select('feedbacks')
                     .eq('link', link)
-                    .single();
+                    .maybeSingle();
 
                 if (error) throw error;
                 setFeedbacks(data?.feedbacks || {});
