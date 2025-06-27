@@ -4,9 +4,11 @@ import Widgets from "../components/widgetsPage/widgets";
 
 const Page = () => {
   return (
-    <div className="w-screen h-screen flex flex-col items-center justify-between">
+    <div className="w-full min-h-screen flex flex-col items-center justify-between">
       <Navbar />
-      <Widgets/>
+      <div className="flex-1 w-full flex justify-center p-4">
+        <Widgets/>
+      </div>
       <Footer/>
     </div>
   );

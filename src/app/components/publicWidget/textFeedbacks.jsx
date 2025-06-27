@@ -30,26 +30,37 @@ const TextFeedbacks = ({ link }) => {
         fetchFeedbacks();
     }, [link]);
 
-    if (loading) return <div className='flex aspect-square w-[30vw] border-1 rounded-2xl items-center justify-center'>Loading...</div>;
-    if (error) return <div className='flex aspect-square w-[30vw] border-1 rounded-2xl items-center justify-center'>Error: {error}</div>;
+    if (loading) return (
+        <div className='flex w-full h-[300px] md:w-[30vw] md:aspect-square border rounded-2xl items-center justify-center p-4'>
+            Loading...
+        </div>
+    );
+    
+    if (error) return (
+        <div className='flex w-full h-[300px] md:w-[30vw] md:aspect-square border rounded-2xl items-center justify-center p-4 text-red-500'>
+            Error: {error}
+        </div>
+    );
 
     return (
-        <div className='flex aspect-square w-[30vw] border-1 rounded-2xl p-4 overflow-auto'>
+        <div className='flex w-full h-[300px] md:w-[30vw] md:aspect-square border rounded-2xl p-4 overflow-auto bg-white'>
             {feedbacks && Object.keys(feedbacks).length > 0 ? (
-                <div className="w-full">
+                <div className="w-full space-y-4">
                     {Object.entries(feedbacks).map(([userName, userFeedbacks]) => (
-                        <div key={userName} className="mb-4">
-                            <h3 className="font-bold text-lg">{userName}</h3>
-                            <ul className="list-disc pl-5">
+                        <div key={userName} className="mb-4 last:mb-0">
+                            <h3 className="font-bold text-md md:text-lg">{userName}</h3>
+                            <ul className="list-disc pl-5 space-y-1">
                                 {userFeedbacks.map((feedback, index) => (
-                                    <li key={index} className="my-1">{feedback}</li>
+                                    <li key={index} className="text-sm md:text-base">
+                                        {feedback}
+                                    </li>
                                 ))}
                             </ul>
                         </div>
                     ))}
                 </div>
             ) : (
-                <div className="w-full flex items-center justify-center text-gray-500">
+                <div className="w-full flex items-center justify-center text-gray-500 text-sm md:text-base">
                     No feedbacks yet for this widget
                 </div>
             )}

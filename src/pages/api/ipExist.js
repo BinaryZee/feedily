@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   const supabase = createClient();
   const { ip } = req.body;
   
-  console.log(ip)
+
 
   if (!ip) {
     return res.status(400).json({ error: "Missing IP" });
@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     .select("ip , user_name",)
     .eq("ip", ip)
     .single(); 
-  console.log(data)
+
   if (error && error.code !== "PGRST116") { 
     console.error("Database error:", error);
     return res.status(500).json({ error: "Database error", details: error });

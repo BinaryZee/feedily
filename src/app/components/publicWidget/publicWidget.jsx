@@ -49,7 +49,6 @@ const PublicWidget = ({ link }) => {
       try {
         const res = await fetch(`/api/getWidget?link=${link}`);
         const data = await res.json();
-        console.log(data)
         setData(data);
         setFeedback(data.text_feedback);
         
@@ -132,14 +131,13 @@ const PublicWidget = ({ link }) => {
   };
 
   if (loading) {
-    
     return <div className="flex-1 flex justify-center items-center"><h2>Loading...</h2></div>
   }
   if (data.archieved) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center">
-        <div className="bg-white p-8 rounded-lg max-w-md w-full text-center">
-          <h3 className="text-xl font-semibold mb-4">Widget Unavailable</h3>
+      <div className="flex-1 flex flex-col items-center justify-center p-4">
+        <div className="bg-white p-6 md:p-8 rounded-lg max-w-md w-full text-center">
+          <h3 className="text-lg md:text-xl font-semibold mb-4">Widget Unavailable</h3>
           <p className="text-gray-600">
             The owner has temporarily hidden this widget.
           </p>
@@ -149,10 +147,10 @@ const PublicWidget = ({ link }) => {
   }
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center relative">
+    <div className="flex-1 flex flex-col items-center justify-center relative w-full p-4">
       {!isNameGiven && (
-        <div className="bg-white absolute inset-0 bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full">
+        <div className="bg-white absolute inset-0 bg-opacity-50 flex items-center justify-center p-4 z-10">
+          <div className="bg-white p-4 md:p-6 rounded-lg max-w-md w-full shadow-lg">
             <h3 className="text-lg font-semibold mb-4">
               Please enter your name
             </h3>
@@ -167,7 +165,7 @@ const PublicWidget = ({ link }) => {
               />
               <button
                 type="submit"
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 w-full md:w-auto"
               >
                 Submit
               </button>
@@ -177,81 +175,94 @@ const PublicWidget = ({ link }) => {
       )}
 
       {isNameGiven && (
-        <div className="flex w-full justify-center items-center gap-4">
-          <div className="flex flex-col gap-4 w-[50%] h-[70vh] border-2 rounded-2xl p-8 overflow-y-auto">
-            <h2 className="text-xl font-semibold mb-4 text-balance">
+        <div className="flex flex-col lg:flex-row w-full justify-center items-center gap-4 md:gap-6">
+          {/* Feedback Section */}
+          <div className="flex flex-col gap-4 w-full lg:w-[50%] max-w-2xl h-auto min-h-[50vh] lg:h-[70vh] border-2 rounded-2xl p-4 md:p-6 lg:p-8 overflow-y-auto">
+            <h2 className="text-lg md:text-xl font-semibold mb-4 text-balance">
               {data.title}
             </h2>
 
-            {reactions.map((reaction) => (
-              <Reaction
-                key={reaction.id}
-                emoji={reaction.emoji}
-                count={feedbackCounts[reaction.id] || 0}
-                selected={selectedRating === reaction.id}
-                onClick={async () => {
-                  if (selectedRating === reaction.id) return;
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:flex lg:flex-col gap-3 md:gap-4">
+              {reactions.map((reaction) => (
+                <Reaction
+                  key={reaction.id}
+                  emoji={reaction.emoji}
+                  count={feedbackCounts[reaction.id] || 0}
+                  selected={selectedRating === reaction.id}
+                  onClick={async () => {
+                    if (selectedRating === reaction.id) return;
 
-                  setFeedbackCounts((prev) => {
-                    const updated = { ...prev };
-                    if (selectedRating) {
-                      updated[selectedRating] = Math.max(
-                        (updated[selectedRating] || 1) - 1,
-                        0
-                      );
-                    }
-                    updated[reaction.id] = (updated[reaction.id] || 0) + 1;
-                    return updated;
-                  });
-
-                  setSelectedRating(reaction.id);
-
-                  try {
-                    await fetch("/api/postFeedback", {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                      body: JSON.stringify({
-                        ip,
-                        rating: reaction.id,
-                        link,
-                        username: isNameGiven ? username : null,
-                      }),
+                    setFeedbackCounts((prev) => {
+                      const updated = { ...prev };
+                      if (selectedRating) {
+                        updated[selectedRating] = Math.max(
+                          (updated[selectedRating] || 1) - 1,
+                          0
+                        );
+                      }
+                      updated[reaction.id] = (updated[reaction.id] || 0) + 1;
+                      return updated;
                     });
-                  } catch (err) {
-                    console.error("Failed to send feedback", err);
-                  }
-                }}
-              />
-            ))}
+
+                    setSelectedRating(reaction.id);
+
+                    try {
+                      await fetch("/api/postFeedback", {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                          ip,
+                          rating: reaction.id,
+                          link,
+                          username: isNameGiven ? username : null,
+                        }),
+                      });
+                    } catch (err) {
+                      console.error("Failed to send feedback", err);
+                    }
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Feedback Input */}
             <div
-              className={`w-full flex items-center gap-2 ${
+              className={`w-full flex items-center gap-2 mt-4 ${
                 allowFeedback ? "" : "hidden"
               }`}
             >
-              <input
-                ref={feedback}
-                type="text"
-                placeholder="enter your feedback"
-                className="min-h-[8vh] border w-full rounded-[.5rem] p-0.5 pl-3 pr-10"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handelFeedbackSubmit();
-                  }
-                }}
-              />
-              <button
-                onClick={handelFeedbackSubmit}
-                className="relative right-10 text-gray-500 hover:text-blue-500 transition-colors"
-                aria-label="Submit feedback"
-              >
-                <Send className="w-5 h-5" />
-              </button>
+              <div className="relative flex-1">
+                <input
+                  ref={feedback}
+                  type="text"
+                  placeholder="Enter your feedback"
+                  className="min-h-[50px] md:min-h-[60px] border w-full rounded-lg p-2 pl-3 pr-10"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handelFeedbackSubmit();
+                    }
+                  }}
+                />
+                <button
+                  onClick={handelFeedbackSubmit}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-blue-500 transition-colors"
+                  aria-label="Submit feedback"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
-          {allowFeedback && <TextFeedbacks link={link} />}
+
+          {/* Text Feedbacks Section */}
+          {allowFeedback && (
+            <div className="w-full lg:w-[50%] max-w-2xl">
+              <TextFeedbacks link={link} />
+            </div>
+          )}
         </div>
       )}
     </div>

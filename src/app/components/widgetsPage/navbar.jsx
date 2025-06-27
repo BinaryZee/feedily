@@ -10,12 +10,12 @@ const Navbar = () => {
     const [showDropdown, setShowDropdown] = useState(false);
 
     return (
-        <div className='w-full h-[15%] flex justify-between items-center px-10 mb-4 relative'>
-            <h1 className={`text-[96px] font-bold tracking-[-4px] font-sans`}>Feedily</h1>
+        <div className='w-full h-auto min-h-[80px] md:h-[15%] flex justify-between items-center px-4 md:px-10 py-4 md:py-0 mb-4 relative'>
+            <h1 className={`text-4xl sm:text-6xl md:text-[96px] font-bold tracking-tight md:tracking-[-4px] font-sans`}>Feedily</h1>
             <div className="relative">
                 <CircleUser 
-                    size={68} 
-                    className='cursor-pointer hover:opacity-80 transition-opacity'
+                    size={48} 
+                    className='md:w-[68px] md:h-[68px] cursor-pointer hover:opacity-80 transition-opacity'
                     onClick={() => setShowDropdown(!showDropdown)}
                 />
                 {showDropdown && (
@@ -38,7 +38,6 @@ const Navbar = () => {
                     </div>
                 )}
             </div>
-            {/* Click outside to close dropdown */}
             {showDropdown && (
                 <div 
                     className="fixed inset-0 z-40" 
